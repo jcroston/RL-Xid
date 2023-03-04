@@ -222,7 +222,7 @@ def GetLR2(fr, qm, nm,debug=False):
     # we want density in units of per typical source length
     # squared for LOFAR f(R) and sqrt(density) in arcsec
     #for RL f(R) - take 60 arcsec
-    lr = (fr * qm) / ((nm**1.5)/(np.sqrt(area)*area/(60.0*60.0)))
+    lr = (fr * (qm + 0.1) / (((nm + 2.1)**1.5)/(np.sqrt(area)*area/(60.0*60.0)))
     return lr
 
 def Getqmc(m, c):
@@ -257,10 +257,13 @@ for asource in source_list:
     if(len(MCLR)<1):
         newdrop.append(source)
     else:
-        
-        MCLR[str(RLF.LRMC)] = MCLR.apply(lambda row: GetLR2(row['Multi_LR'], Getqmc(row[RLF.OptMagA], row['Colour']), Getnmc(row[RLF.OptMagA], row['Colour'])), axis = 1).astype(np.float128)
+        # separately generating the q and n for the record
+        MCLR[str(RLF.QMC)] = MCLR.apply(lambda row: Getqmc(row[RLF.OptMagA], row['Colour']))
+        MCLR[str(RLF.NMC)] = MCLR.apply(lambda row: Getnmc(row[RLF.OptMagA], row['Colour']))
+        MCLR[str(RLF.LRMC)] = MCLR.apply(lambda row: GetLR2(row['Multi_LR'], MCLR[str(RLF.QMC)], MCLR[str(RLF.NMC)]), axis = 1).astype(np.float128)
+        #MCLR[str(RLF.LRMC)] = MCLR.apply(lambda row: GetLR2(row['Multi_LR'], Getqmc(row[RLF.OptMagA], row['Colour']), Getnmc(row[RLF.OptMagA], row['Colour'])), axis = 1).astype(np.float128)
                 
-        MCLR.to_csv(str(RLF.LR) %source, columns = ['LofarRDis', str(RLF.PossRA), str(RLF.PossDEC), str(RLF.IDW), str(RLF.IDP), str(RLF.OptMagP), str(RLF.OptMagA), str(RLF.LRMC)], header = True, index = False)
+        MCLR.to_csv(str(RLF.LR) %source, columns = ['LofarRDis', str(RLF.PossRA), str(RLF.PossDEC), str(RLF.IDW), str(RLF.IDP), str(RLF.OptMagP), str(RLF.OptMagA), str(RLF.QMC), str(RLF.NMC), str(RLF.LRMC)], header = True, index = False)
 
 
 source_list=filter_sourcelist(source_list,newdrop)
